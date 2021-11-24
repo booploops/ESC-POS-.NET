@@ -25,7 +25,6 @@ namespace ESCPOS_NET
 
         public override void Flush(object sender, ElapsedEventArgs e)
         {
-            FlushTimer.Stop();
             if (BytesWrittenSinceLastFlush > 0)
             {
                 var bytes = _stream.ToArray();

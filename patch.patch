@@ -1,0 +1,74 @@
+From 006bff2d63c21e13bc08b8ad9d6b88d008595ccc Mon Sep 17 00:00:00 2001
+From: Luke Paireepinart <lukepdev@live.com>
+Date: Wed, 1 Jul 2020 10:59:27 -0500
+Subject: [PATCH] #47 - Add support for network printing (performance is poor
+ because job is sent as multiple print jobs)
+
+---
+ ESCPOS_NET/Printers/BasePrinter.cs  |  2 +-
+ ESCPOS_NET/Printers/SambaPrinter.cs | 43 +++++++++++++++++++++++++++++
+ 3 files changed, 61 insertions(+), 6 deletions(-)
+ create mode 100644 ESCPOS_NET/Printers/SambaPrinter.cs
+
+diff --git a/ESCPOS_NET/Printers/BasePrinter.cs b/ESCPOS_NET/Printers/BasePrinter.cs
+index 31085b4..a6b84a8 100644
+--- a/ESCPOS_NET/Printers/BasePrinter.cs
++++ b/ESCPOS_NET/Printers/BasePrinter.cs
+@@ -103,7 +103,7 @@ public virtual void Write(byte[] bytes)
+             }
+         }
+ 
+-        protected virtual void Flush(object sender, ElapsedEventArgs e)
++        public virtual void Flush(object sender, ElapsedEventArgs e)
+         {
+             BytesWrittenSinceLastFlush = 0;
+             FlushTimer.Stop();
+diff --git a/ESCPOS_NET/Printers/SambaPrinter.cs b/ESCPOS_NET/Printers/SambaPrinter.cs
+new file mode 100644
+index 0000000..d91d868
+--- /dev/null
++++ b/ESCPOS_NET/Printers/SambaPrinter.cs
+@@ -0,0 +1,43 @@
++﻿using System;
++using System.IO;
++using System.Timers;
++
++namespace ESCPOS_NET
++{
++    public class SambaPrinter : BasePrinter
++    {
++        private string _filePath;
++        private string _tempFileBasePath;
++        private string _tempFilePath;
++        private MemoryStream _stream;
++
++        public SambaPrinter(string tempFileBasePath, string filePath) : base()
++        {
++            _tempFileBasePath = tempFileBasePath;
++            if (!Directory.Exists(_tempFileBasePath))
++            {
++                Directory.CreateDirectory(_tempFileBasePath);
++            }
++            _stream = new MemoryStream();
++            Writer = new BinaryWriter(new MemoryStream());
++            _filePath = filePath;
++        }
++        public override void Flush(object sender, ElapsedEventArgs e)
++        {
++            FlushTimer.Stop();
++            if (BytesWrittenSinceLastFlush > 0)
++            {
++                var bytes = _stream.ToArray();
++                _stream = new MemoryStream();
++                Writer = new BinaryWriter(_stream);
++
++                _tempFilePath = Path.Combine(_tempFileBasePath, $"{Guid.NewGuid()}.bin");
++                File.WriteAllBytes(_tempFilePath, bytes);
++                File.Copy(_tempFilePath, _filePath);
++                File.Delete(_tempFilePath);
++
++            }
++            BytesWrittenSinceLastFlush = 0;
++        }
++    }
++}
