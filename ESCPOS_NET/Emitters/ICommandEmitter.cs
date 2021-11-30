@@ -1,3 +1,5 @@
+using SixLabors.ImageSharp;
+
 namespace ESCPOS_NET.Emitters
 {
     public interface ICommandEmitter
@@ -66,6 +68,8 @@ namespace ESCPOS_NET.Emitters
         byte[] WriteImageFromBuffer();
 
         byte[] PrintImage(byte[] image, bool isHiDPI, bool isLegacy = false, int maxWidth = -1, int color = 1);
+
+        byte[] PrintImage(Image image);
 
         /* Status Commands */
         byte[] EnableAutomaticStatusBack();

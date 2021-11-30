@@ -1,3 +1,4 @@
+using System.IO;
 using ESCPOS_NET.Emitters.BaseCommandValues;
 using ESCPOS_NET.Utilities;
 using SixLabors.ImageSharp;
@@ -117,6 +118,16 @@ namespace ESCPOS_NET.Emitters
             {
                 return ByteSplicer.Combine(SetImageDensity(isHiDPI), BufferImage(image, maxWidth, isLegacy, color), WriteImageFromBuffer());
             }
+        }
+
+        public virtual byte[] PrintImage(Image image)
+        {
+            var memoryStream = new MemoryStream();
+            image.SaveAsPng(memoryStream);
+            var bytes = memoryStream.ToArray();
+            memoryStream.Dispose();
+
+            return PrintImage(bytes, isHiDPI: true);
         }
     }
 }
